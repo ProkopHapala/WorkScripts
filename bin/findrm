@@ -1,0 +1,9 @@
+#! /bin/bash
+
+if [ "$2" == "1" ]; then
+    echo "deleting:     $1"
+    find . -type f -name "$1" -exec rm -f {} \;   #delete files
+else
+    echo "would delete: $1"
+    find . -type f -name "$1";                    #just find files to delete
+fi

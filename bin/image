@@ -1,0 +1,55 @@
+#! /bin/bash
+
+awk -v n1=$2 -v n2=$3 -v n3=$4 '
+BEGIN{
+getline < "cel.lvs"
+ax=$1; ay=$2; az=$3;
+getline < "cel.lvs"
+bx=$1; by=$2; bz=$3;
+getline < "cel.lvs"
+cx=$1; cy=$2; cz=$3;
+i=0;
+}
+
+(NR==1){ N=$1; print n1*n2*n3*N}
+(NR>1){
+e[i]=$1; x[i]=$2; y[i]=$3; z[i]=$4;
+i++;
+}
+
+END{
+
+#print ax,ay,az
+#print bx,by,bz
+#print cx,cy,cz
+
+
+for (i=0;i<n1;i++){
+    for (j=0;j<n2;j++){
+	for (k=0;k<n3;k++){
+	    dx = ax*i + bx*j + cx*k;
+	    dy = ay*i + by*j + cy*k;
+	    dz = az*i + bz*j + cz*k;
+            #print dx,dy,dz
+	    for (ii=0;ii<N;ii++){
+	       printf " %5i %5.6f %5.6f %5.6f\n",e[ii], x[ii]+dx, y[ii]+dy, z[ii]+dz 
+	    }
+	    
+	}
+    }
+}
+
+}
+
+' $1.bas  > $1-image.bas
+
+b2x $1-image.bas $1-image.xyz 
+
+
+# ========================================
+
+awk -v n1=$2 -v n2=$3 -v n3=$4 '
+(NR==1){ printf " %5.6f  %5.6f  %5.6f\n",$1*n1,$2*n1,$3*n1  }
+(NR==2){ printf " %5.6f  %5.6f  %5.6f\n",$1*n2,$2*n2,$3*n2  }
+(NR==3){ printf " %5.6f  %5.6f  %5.6f\n",$1*n3,$2*n3,$3*n3  }
+' cel.lvs > cel_.lvs

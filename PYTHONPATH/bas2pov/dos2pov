@@ -1,0 +1,89 @@
+#! /bin/bash
+
+sizeX=400
+sizeY=400
+
+zoom=40.0
+bondl=1.25    # bond length relative to sum of atomic radii
+bondw=0.05    # bond width in Angstroem
+
+doslen=`cat dens_map.dat | wc -l`
+Emin=$1       # PDOS energy window minimum 
+Emax=$2       # PDOS energy window maximum
+dosscale=1.0  # scale of spheres visualizing PDOS  
+
+cat << EOF > bas.pov
+
+// ***********************************************
+// Camera & other global settings
+// ***********************************************
+
+#declare Zoom = $zoom ;
+#declare Width = $sizeX;
+#declare Height = $sizeY;
+
+camera{
+  orthographic
+  location < 100.0, 100.0, 100.0>
+  sky < 0, -1, 0 >
+  right < -Zoom, 0, 0>
+  up < 0, Zoom, 0 >
+  look_at < 0.0, 0.0, 0.0 >
+}
+
+background      { color rgb <1.0,1.0,1.0> }
+light_source    { < 10,20,30>  rgb <0.5,0.5,0.5> }
+//global_settings { ambient_light rgb< 0.2, 0.2, 0.2> }
+
+
+// ***********************************************
+// macros for common shapes
+// ***********************************************
+
+#default { finish {
+  ambient 0.45
+  diffuse 0.84
+  specular 0.22
+  roughness .00001
+  metallic
+  phong 0.9
+  phong_size 120
+}
+}
+
+#macro translucentFinish(T)
+ finish {
+  ambient 0.45
+  diffuse 0.84
+  specular 0.22
+  roughness .00001
+  metallic 1.0
+  phong 0.9
+  phong_size 120
+}#end
+
+#macro a(X,Y,Z,RADIUS,R,G,B,T)
+ sphere{<X,Y,Z>,RADIUS
+  pigment{rgbt<R,G,B,T>}
+  translucentFinish(T) 
+  no_shadow  // comment this out if you want include shadows 
+  }
+#end
+
+#macro b(X1,Y1,Z1,RADIUS1,X2,Y2,Z2,RADIUS2,R,G,B,T)
+ cone{<X1,Y1,Z1>,RADIUS1,<X2,Y2,Z2>,RADIUS2
+  pigment{rgbt<R,G,B,T>  }
+  translucentFinish(T)
+  no_shadow // comment this out if you want include shadows 
+  }
+#end
+
+EOF
+
+#./bas2spheres.py
+#./bas2bonds.py $bondl $bondw
+./bas2bondlength.py 0.25
+#./dosmap2pov.py $doslen $Emin $Emax $dosscale
+
+povray bas.pov +A Width=$sizeX Height=$sizeY Output_Alpha=true Pause_When_Done=true
+

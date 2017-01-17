@@ -1,0 +1,76 @@
+#! /bin/bash
+
+cat << EOF > bas.pov
+
+// ***********************************************
+// Camera & other global settings
+// ***********************************************
+
+#declare Zoom = 30.0;
+#declare Width = 800;
+#declare Height = 800;
+
+camera{
+  orthographic
+  location < 3, 3, 100>
+  sky < 0, -1, 0 >
+  right < -Zoom, 0, 0>
+  up < 0, Zoom, 0 >
+  look_at < 3, 3, 0.0 >
+}
+
+background      { color rgb <1.0,1.0,1.0> }
+light_source    { < 10,20,30>  rgb <0.5,0.5,0.5> }
+//global_settings { ambient_light rgb< 0.2, 0.2, 0.2> }
+
+
+// ***********************************************
+// macros for common shapes
+// ***********************************************
+
+#default { finish {
+  ambient 0.45
+  diffuse 0.84
+  specular 0.22
+  roughness .00001
+  metallic
+  phong 0.9
+  phong_size 120
+}
+}
+
+#macro translucentFinish(T)
+ finish {
+  ambient 0.45
+  diffuse 0.84
+  specular 0.22
+  roughness .00001
+  metallic 1.0
+  phong 0.9
+  phong_size 120
+}#end
+
+#macro a(X,Y,Z,RADIUS,R,G,B,T)
+ sphere{<X,Y,Z>,RADIUS
+  pigment{rgbt<R,G,B,T>}
+  translucentFinish(T) 
+  no_shadow  // comment this out if you want include shadows 
+  }
+#end
+
+#macro b(X1,Y1,Z1,RADIUS1,X2,Y2,Z2,RADIUS2,R,G,B,T)
+ cone{<X1,Y1,Z1>,RADIUS1,<X2,Y2,Z2>,RADIUS2
+  pigment{rgbt<R,G,B,T>  }
+  translucentFinish(T)
+  no_shadow // comment this out if you want include shadows 
+  }
+#end
+
+EOF
+
+python ../bas2spheres.py 0.7
+python ../bas2bonds.py 1.2 0.2
+#python ../dosmap2pov.py
+
+povray bas.pov +A Pause_When_Done=true  Height=800 Width=800 Output_Alpha=true
+
