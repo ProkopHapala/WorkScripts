@@ -3,6 +3,44 @@
 import numpy as np
 import elements
 
+def loadAtoms(fname):
+    xyzs   = [] 
+    Zs     = []
+    enames = []
+    with open(fname, 'r') as f:
+        for line in f:
+            wds = line.split()
+            if wds >= 4:
+                try:
+                    xyzs.append( ( float(wds[1]), float(wds[2]), float(wds[3]) ) )
+                    try:
+                        iz    = int(wds[0]) 
+                        Zs    .append(iz)
+                        enames.append( elements.ELEMENTS[iz] )
+                    except:
+                        ename = wds[0]
+                        enames.append( ename )
+                        Zs    .append( elements.ELEMENT_DICT[ename][0] )
+                except:
+                    print "cannot interpet line: ", line
+                    continue
+    xyzs = np.array( xyzs )
+    Zs   = np.array( Zs, dtype=np.int32 )
+    return xyzs,Zs,enames
+
+def saveXyz( fname, enames, xyzs ):
+    with open(fname, 'w') as f:
+        f.write("%i\n" %len(enames))
+        f.write("# comment\n" )
+        for i,ename in enumerate(enames):
+            f.write("%s %f %f %f\n" %(ename,xyzs[i,0],xyzs[i,1],xyzs[i,2]) )
+            
+def saveBas( fname, Zs, xyzs ):
+    with open(fname, 'w') as f:
+        f.write("%i\n" %len(Zs))
+        for i,Z in enumerate(Zs):
+            f.write("%i %f %f %f\n" %(Z,xyzs[i,0],xyzs[i,1],xyzs[i,2]) )
+
 def findAllBonds( atoms, Rcut=3.0, RvdwCut=0.7 ):
     bonds     = []
     bondsVecs = []
