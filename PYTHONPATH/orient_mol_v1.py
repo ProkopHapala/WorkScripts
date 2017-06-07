@@ -6,6 +6,41 @@ import pyMolecular.atomicUtils as au
 
 # === read input
 
+def CM(xyz):
+    c=np.zeros(3)
+    for i in np.arange(len(xyz[:,0])):	
+	c[:]=c[:]+xyz[i,:]
+    c[:]=c[:]/(len(xyz[:,0]))
+    return c
+
+
+
+fname       = sys.argv[1] 
+
+
+xyzs, Zs, enames = au.loadAtoms( fname )
+
+print CM(xyzs)
+cm=CM(xyzs)
+
+#Rs = np.dot( xyzs[:,0],xyzs[:,0] ) + np.dot( xyzs[:,1],xyzs[:,1] ) + np.dot( xyzs[:,2],xyzs[:,2] )
+
+x=[]
+for i in np.arange(0,20,0.01):          # loop over atoms
+	for j in np.arange(len(xyzs[:,0])):
+		diff=cm[:]-xyzs[j,:],cm-xyzs[j,:])
+		if np.dot(diff,diff) < i && np.dot(diff,diff) >=i:
+			if (enames) == Si:
+			if (enames) == C:
+			if (enames) == H:
+			if (enames) == O:
+
+print x
+print np.shape(x)
+
+
+
+'''
 narg = len(sys.argv)
 if narg < 5:
     print "use like this:"
@@ -53,3 +88,4 @@ if margin is not None:
 
 au.saveXyz(fname+'_.xyz',enames,xyzs_)
 au.saveBas(fname+'_.bas',Zs,xyzs_)
+'''

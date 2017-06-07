@@ -5,6 +5,8 @@
 *.pyd
 *.x
 *.so
+*.xsf
+*.dat
 
 Build
 
