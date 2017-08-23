@@ -138,7 +138,7 @@ def pairsNotShareNeigh( pairs, neighs ):
         if not share_ng:
             pairs_.append( pair )
     return pairs_    
-    
+
 def makeRotMat( fw, up ):
     fw   = fw/np.linalg.norm(fw)
     up   = up - fw*np.dot(up,fw)
@@ -165,6 +165,9 @@ def groupToPair( p1, p2, group, up, up_by_cog=False ):
     
 def groupToAtom( p, fw, up, group ):
     rotmat      = makeRotMat( fw, up )
+    print "========="
+    print fw, up
+    print rotmat
     ps          = group[:,1:]
     ps_         = np.dot( ps, rotmat ) 
     group[:,1:] = ps_ + p
@@ -262,6 +265,35 @@ def replaceGroup( atoms, found, foundDict, group=['17'], Ups=(0.0,0.0,0.0), bond
                 atoms_.append( atom )
     return atoms_
 
+def prepareReplaceGroups( replaces ):
+    group_dct={}
+    #print replaces
+    for val in replaces.values():
+        val[2] = np.array(val[2]); val[2] /= np.linalg.norm( val[2] )
+        val[3] = np.array(val[3]); val[2] /= np.linalg.norm( val[2] )
+        print val[2],val[3]
+        if not val[0] in group_dct:
+            print "loading group: ", val[0]
+            group_dct[val[0]]  = np.genfromtxt( val[0], skip_header=1 )
+            #group_dct[val[0]]  = ( au.loadAtoms(item[1]) ,)
+    return group_dct
+    
+def replaceAtomTypes( atoms, replaces, group_dct ):   
+    atoms_ = []
+    for iatom,atom in enumerate( atoms ):
+        if( atom[0] in replaces ):
+            repl               = replaces[atom[0]]
+            group_atoms        = group_dct[repl[0]].copy()
+            group_atoms[:,1:]  = group_atoms[:,repl[4]]
+            group_atoms[:,1:] -= group_atoms[repl[1],1:] 
+            group_= groupToAtom( atom[1:], repl[2], repl[3], group_atoms )
+            #group_ = group_atoms
+            for atom in group_:
+                atoms_.append( atom )
+        else:
+            atoms_.append(atom)
+    return atoms_
+
 def saveAtoms( atoms, fname, xyz=True ):
     fout = open(fname,'w')
     fout.write("%i\n"  %len(atoms) )
@@ -270,9 +302,7 @@ def saveAtoms( atoms, fname, xyz=True ):
         #print( i, atom )
         fout.write("%i %f %f %f\n"  %( atom[0], atom[1], atom[2], atom[3] ) )
     fout.close() 
-    
-    
-    
+        
 #def loadCoefs( characters=['s','px','py','pz'] ):
 def loadCoefs( characters=['s'] ):
     dens = None
