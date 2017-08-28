@@ -22,7 +22,7 @@ for ia in range(nabc[0]):
             xyzs_  .append( xyzs + (lvec[0]*ia + lvec[1]*ib + lvec[0]*ic)[np.newaxis,:] )
             enames_ += enames
             Zs_     .append(Zs)
-Zs_ = np.concatenate( Zs_ )
+Zs_   = np.concatenate( Zs_   )
 xyzs_ = np.concatenate( xyzs_ )
 
 

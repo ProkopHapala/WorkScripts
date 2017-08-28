@@ -28,13 +28,50 @@ def loadAtoms(fname):
     Zs   = np.array( Zs, dtype=np.int32 )
     return xyzs,Zs,enames
 
+def loadXYZmovie(fname):
+    frames = []
+    with open(fname, 'r') as f:
+        il = 0
+        while True:
+            try:
+                line = f.readline(); il+=1; #print ">>",line,
+                n = int(line)
+            except:
+                break
+            line = f.readline(); il+=1; #print ">>",line,
+            xyzs   = [] 
+            Zs     = []
+            enames = []
+            for i in range(n):
+                line = f.readline(); il+=1;
+                #print line,
+                wds = line.split()
+                if len(wds)<4 : print il," : ",line
+                xyzs.append( ( float(wds[1]), float(wds[2]), float(wds[3]) ) )
+                try:
+                    iz    = int(wds[0]) 
+                    Zs    .append(iz)
+                    enames.append( elements.ELEMENTS[iz] )
+                except:
+                    ename = wds[0]
+                    enames.append( ename )
+                    Zs    .append( elements.ELEMENT_DICT[ename][0] )
+            xyzs = np.array( xyzs )
+            Zs   = np.array( Zs, dtype=np.int32 )
+            frames.append( (xyzs, Zs, enames) )
+    return frames
+
+def toXYZ( f, enames, xyzs ):
+    f.write("%i\n" %len(enames))
+    f.write("# comment\n" )
+    for i,ename in enumerate(enames):
+        f.write("%s %f %f %f\n" %(ename,xyzs[i,0],xyzs[i,1],xyzs[i,2]) )
+    #f.write("\n")
+
 def saveXyz( fname, enames, xyzs ):
     with open(fname, 'w') as f:
-        f.write("%i\n" %len(enames))
-        f.write("# comment\n" )
-        for i,ename in enumerate(enames):
-            f.write("%s %f %f %f\n" %(ename,xyzs[i,0],xyzs[i,1],xyzs[i,2]) )
-            
+        toXYZ( f, enames, xyzs )
+
 def saveBas( fname, Zs, xyzs ):
     with open(fname, 'w') as f:
         f.write("%i\n" %len(Zs))
@@ -61,7 +98,7 @@ def findAllBonds( atoms, Rcut=3.0, RvdwCut=0.7 ):
                 bonds.append( (i,j) )
                 bondsVecs.append( ( rij, dp[j]/rij ) )
     return bonds, bondsVecs
-    
+
 def neighs( natoms, bonds ):
     neighs = [{} for i in range(natoms) ]
     for ib, b in enumerate(bonds):
@@ -88,7 +125,7 @@ def findTypeNeigh( atoms, neighs, typ, neighTyps=[(1,2,2)] ):
             if( (n>=nmin)and(n<=nmax) ):
                 selected.append( iatom )
     return selected
-    
+
 def getAllNeighsOfSelected( selected, neighs, atoms, typs={1} ):
     result = {}
     for iatom in selected:
@@ -99,7 +136,7 @@ def getAllNeighsOfSelected( selected, neighs, atoms, typs={1} ):
                 else:
                     result[jatom] = [iatom]
     return result 
-    
+
 def findPairs( select1, select2, atoms, Rcut=2.0 ):    
     ps = atoms[select2,1:]
     Rcut2 = Rcut*Rcut
@@ -124,7 +161,7 @@ def findPairs_one( select1, atoms, Rcut=2.0 ):
         for jatom in select1[:i][ rs[:i] < Rcut2 ]:
             pairs.append( (iatom,jatom) )
     return pairs  
-    
+
 def pairsNotShareNeigh( pairs, neighs ):
     pairs_ = []
     for pair in pairs:
@@ -162,7 +199,7 @@ def groupToPair( p1, p2, group, up, up_by_cog=False ):
     #print( "ps_=", ps_ )
     group[:,1:] = ps_ + center
     return group
-    
+
 def groupToAtom( p, fw, up, group ):
     rotmat      = makeRotMat( fw, up )
     print "========="
@@ -172,7 +209,7 @@ def groupToAtom( p, fw, up, group ):
     ps_         = np.dot( ps, rotmat ) 
     group[:,1:] = ps_ + p
     return group    
-    
+
 def replacePairs( pairs, atoms, group, up_vec=(np.array((0.0,0.0,0.0)),1) ):
     replaceDict = {}
     for ipair,pair in enumerate(pairs):
@@ -194,8 +231,6 @@ def replacePairs( pairs, atoms, group, up_vec=(np.array((0.0,0.0,0.0)),1) ):
         #break
     return atoms_
 
-        
-            
 def findNearest( p, ps, rcut=1e+9 ):
 	rs = np.sum( (ps - p)**2, axis=1 )
 	imin = np.argmin(rs)
@@ -294,6 +329,28 @@ def replaceAtomTypes( atoms, replaces, group_dct ):
             atoms_.append(atom)
     return atoms_
 
+def pbc_tile( xyzs, lvec, enames=None, Zs=None, n=(2,2,2), n0=(0,0,0) ):
+    xyzs_=[]
+    for ia in range(n0[0],n[0]):
+        for ib in range(n0[1],n[1]):
+            for ic in range(n0[2],n[2]):
+                xyzs_   .append( xyzs + (lvec[0]*ia + lvec[1]*ib + lvec[2]*ic)[np.newaxis,:] )
+    xyzs_ = np.concatenate( xyzs_ )
+    ntot = (n[0]-n0[0])*(n[1]-n0[1])*(n[2]-n0[2])
+    Zs_=None; enames_=None
+    if enames is not None: enames_ = enames*   ntot
+    if Zs     is not None: Zs_     = np.tile(Zs,ntot)
+    return xyzs_,Zs_,enames_ 
+
+def pbc_roll( xyzs, lvec, d=(0.5,0.5,0.5) ):
+    ilvec = np.linalg.inv( lvec )
+    abcs  = np.dot( xyzs, ilvec ) 
+    abcs[:,0]  = np.mod( abcs[:,0]+d[0], 1.0 )
+    abcs[:,1]  = np.mod( abcs[:,1]+d[1], 1.0 )
+    abcs[:,2]  = np.mod( abcs[:,2]+d[2], 1.0 )
+    xyzs_ = np.dot( abcs, lvec )
+    return xyzs_ 
+
 def saveAtoms( atoms, fname, xyz=True ):
     fout = open(fname,'w')
     fout.write("%i\n"  %len(atoms) )
@@ -325,7 +382,6 @@ def loadCoefs( characters=['s'] ):
     return dens, coefs, Es
 
 
-    
 def findCOG( ps, byBox=False ):
     if(byBox):
         xmin=ps[:,0].min(); xmax=ps[:,0].max();
@@ -336,7 +392,7 @@ def findCOG( ps, byBox=False ):
         cog = np.sum( ps, axis=0 )
         cog *=(1.0/len(ps))
         return cog
-        
+
 def histR( ps, dbin=None, Rmax=None, weights=None ):
     rs = np.sqrt(np.sum((ps*ps),axis=1))
     bins=100
